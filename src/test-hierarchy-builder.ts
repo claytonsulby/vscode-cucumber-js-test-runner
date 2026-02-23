@@ -89,7 +89,7 @@ export function buildTestHierarchyFromPickles(
     }
 
     // Create feature node
-    const featureId = buildNodeId(parentId, filename);
+    const featureId = `${normalizedUri}`;
     const featureNode: HierarchyNode = {
       id: featureId,
       name: filename,

@@ -43,10 +43,13 @@ const StepSchema = z
   .object({
     id: z.string(),
     keyword: z.string(),
-    keywordType: z.string(),
+    // Some cucumber message versions do not include keywordType on GherkinDocument steps
+    keywordType: z.string().optional(),
     text: z.string(),
     location: LocationSchema,
     dataTable: DataTableSchema.optional(),
+    // Allow docString and any future optional fields without breaking parsing
+    docString: z.any().optional(),
   })
   .strict();
 

@@ -30,7 +30,10 @@ export class CucumberJsTestController {
     };
   }
 
-  public refresh() {}
+  public refresh() {
+    this.diagnostics.clear();
+    void this.discoverTestsFromPickles();
+  }
 
   public initializeWorkspace(): void {
     this.rootPath = this.getWorkspaceRootPath() || '';
@@ -71,7 +74,9 @@ export class CucumberJsTestController {
     if (request.include && request.include.length > 0) {
       for (const test of request.include) {
         if (test.uri) {
-          const relativePath = path.relative(this.rootPath, test.uri.fsPath);
+          const relativePath = this.rootPath
+            ? path.relative(this.rootPath, test.uri.fsPath)
+            : test.uri.fsPath;
           const line = test.range ? `:${test.range.start.line + 1}` : '';
           arguments_.push(`${relativePath}${line}`);
         }
@@ -111,7 +116,7 @@ export class CucumberJsTestController {
       this.diagnostics
     );
 
-    const arguments_ = this.buildCucumberArgs(request);
+  const arguments_ = this.buildCucumberArgs(request);
     const useTemporaryConfig = arguments_.length > 0;
 
     await (useTemporaryConfig
@@ -127,7 +132,7 @@ export class CucumberJsTestController {
   public async discoverTestsFromPickles(): Promise<void> {
     const pickles: Pickle[] = [];
     const gherkinDocuments: GherkinDocument[] = [];
-    await this.cucumberRunner?.runCucumber(
+    await this.cucumberRunner?.runCucumberWithTmpConfig(
       ['--dry-run'],
       undefined,
       (event: CucumberRunnerEvent) => {
@@ -137,7 +142,8 @@ export class CucumberJsTestController {
         if (event && event.type === 'gherkinDocument') {
           gherkinDocuments.push(event.data);
         }
-      }
+      },
+      { discoveryMode: true }
     );
 
     const hierarchy = buildTestHierarchyFromPickles(pickles, gherkinDocuments);

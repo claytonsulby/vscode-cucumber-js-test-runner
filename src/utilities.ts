@@ -31,3 +31,23 @@ export function logRun(message: string, run: vscode.TestRun | undefined): void {
     run.appendOutput(message + '\r\n');
   }
 }
+
+export function getExtensionConfig() {
+  const config = vscode.workspace.getConfiguration('cucumber-js-test-runner');
+  const featureGlobs = config.get<string[]>('featureGlobs') ?? [
+    'docs/features/**/*.feature',
+    'features/**/*.feature',
+  ];
+  const stepGlobs = config.get<string[]>('stepGlobs') ?? [
+    'tests/bdd-steps/**/*.{ts,js}',
+    'features/**/*.{ts,js}',
+  ];
+  const useImport = config.get<boolean>('useImport') ?? false;
+  const importGlobs = config.get<string[]>('importGlobs') ?? [
+    'tests/bdd-steps/**/*.{ts,mts,js,mjs}',
+    'features/**/*.{ts,mts,js,mjs}',
+  ];
+  const requireModule = config.get<string[]>('requireModule') ?? ['ts-node/register'];
+  const nodeOptions = config.get<string[]>('nodeOptions') ?? [];
+  return { featureGlobs, stepGlobs, requireModule, useImport, importGlobs, nodeOptions };
+}

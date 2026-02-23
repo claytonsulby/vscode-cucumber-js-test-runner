@@ -45,7 +45,68 @@
         "command": "cucumber-js-test-runner.refreshTests",
         "title": "Refresh Cucumber.js Tests"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Cucumber.js Test Runner",
+      "properties": {
+        "cucumber-js-test-runner.featureGlobs": {
+          "type": "array",
+          "description": "Glob patterns for feature files to discover and run.",
+          "default": [
+            "docs/features/**/*.feature",
+            "features/**/*.feature"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "cucumber-js-test-runner.stepGlobs": {
+          "type": "array",
+          "description": "Glob patterns for step definition files passed to Cucumber via --require.",
+          "default": [
+            "tests/bdd-steps/**/*.{ts,js}",
+            "features/**/*.{ts,js}"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "cucumber-js-test-runner.useImport": {
+          "type": "boolean",
+          "description": "Use --import (ESM) instead of --require (CJS) to load step files.",
+          "default": false
+        },
+        "cucumber-js-test-runner.importGlobs": {
+          "type": "array",
+          "description": "Glob patterns for step definition files passed to Cucumber via --import.",
+          "default": [
+            "tests/bdd-steps/**/*.{ts,mts,js,mjs}",
+            "features/**/*.{ts,mts,js,mjs}"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "cucumber-js-test-runner.requireModule": {
+          "type": "array",
+          "description": "Modules to preload using --require-module (e.g. ts-node/register).",
+          "default": [
+            "ts-node/register"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "cucumber-js-test-runner.nodeOptions": {
+          "type": "array",
+          "description": "Extra NODE_OPTIONS to set when spawning cucumber (e.g. --loader ts-node/esm).",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
   },
   "activationEvents": [
     "workspaceContains:**/*.feature"

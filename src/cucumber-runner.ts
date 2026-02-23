@@ -4,7 +4,7 @@ import path from 'node:path';
 import * as vscode from 'vscode';
 
 import { cleanAndCopyCucumberConfigAsync } from './cucumber-config-manager';
-import { logChannel, logDevelopment, logRun, safeJsonParse } from './utilities';
+import { getExtensionConfig, logChannel, logDevelopment, logRun, safeJsonParse } from './utilities';
 import { CucumberEvent, GherkinDocument, parseCucumberEvent, Pickle } from './zod-schemas';
 
 export type CucumberRunnerEvent =
@@ -22,15 +22,33 @@ export class CucumberRunner {
   public runCucumber(
     arguments_: string[] = [],
     run?: vscode.TestRun,
-
     eventCallback?: (event: CucumberRunnerEvent) => void,
     _eventCallbacks?: {
       all?: (event: CucumberRunnerEvent) => void;
       gherkinDocuments?: (event: GherkinDocument) => void;
       pickles?: (event: Pickle) => void;
-    }
+    },
+    options?: { discoveryMode?: boolean }
   ): Promise<number> {
-    const fullArguments = [...arguments_, '--format', 'message'];
+    const { requireModule, stepGlobs, featureGlobs, useImport, importGlobs, nodeOptions } =
+      getExtensionConfig();
+    const discoveryMode = options?.discoveryMode === true;
+    const requireModuleArguments = discoveryMode
+      ? []
+      : requireModule.flatMap((m) => ['--require-module', m]);
+    const stepArguments = discoveryMode
+      ? []
+      : useImport
+        ? importGlobs.flatMap((g) => ['--import', g])
+        : stepGlobs.flatMap((g) => ['--require', g]);
+    const featureArguments = arguments_.length > 0 ? arguments_ : featureGlobs;
+    const fullArguments = [
+      ...requireModuleArguments,
+      ...stepArguments,
+      ...featureArguments,
+      '--format',
+      'message',
+    ];
     const fireEvent = (event: CucumberRunnerEvent) => {
       if (eventCallback) {
         eventCallback(event);
@@ -41,9 +59,16 @@ export class CucumberRunner {
       logDevelopment('cucumber-js ' + fullArguments.join(' '));
       logRun('cucumber-js ' + fullArguments.join(' '), run);
 
+      const environment = { ...process.env };
+      if (!discoveryMode && nodeOptions.length > 0) {
+        environment.NODE_OPTIONS = [environment.NODE_OPTIONS, ...nodeOptions]
+          .filter(Boolean)
+          .join(' ');
+      }
       const cucumberProcess = spawn('npx', ['cucumber-js', ...fullArguments], {
         cwd: this.rootPath,
         shell: true,
+        env: environment,
       });
 
       cucumberProcess.stdout.on('data', (data) => {
@@ -86,9 +111,10 @@ export class CucumberRunner {
   public async runCucumberWithTmpConfig(
     arguments_: string[] = [],
     run?: vscode.TestRun,
-    eventCallback?: (event: CucumberRunnerEvent) => void
+  eventCallback?: (event: CucumberRunnerEvent) => void,
+  options?: { discoveryMode?: boolean }
   ): Promise<number> {
-    // Wygeneruj nowy config na podstawie istniejącego
+    // Try to generate a temporary config based on user's config
     const temporaryConfigPath = await cleanAndCopyCucumberConfigAsync(this.rootPath);
 
     const fullArguments = [...arguments_];
@@ -97,6 +123,6 @@ export class CucumberRunner {
       fullArguments.push('--config', path.basename(temporaryConfigPath));
     }
 
-    return this.runCucumber(fullArguments, run, eventCallback);
+  return this.runCucumber(fullArguments, run, eventCallback, undefined, options);
   }
 }

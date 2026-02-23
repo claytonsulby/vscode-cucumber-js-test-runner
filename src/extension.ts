@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 import { CucumberJsTestController } from './cucumber-js-test-controller';
-import { logChannel, logDevelopment } from './utilities';
+import { getExtensionConfig, logChannel, logDevelopment } from './utilities';
 
 export async function activate(context: vscode.ExtensionContext) {
   logDevelopment('vscode-cucumber-js-test-runner init');
@@ -39,11 +39,20 @@ export async function activate(context: vscode.ExtensionContext) {
   );
   context.subscriptions.push(debugProfile);
 
-  // Add FileSystemWatcher for .feature files
-  const featureWatcher = vscode.workspace.createFileSystemWatcher('**/*.feature');
-  context.subscriptions.push(featureWatcher);
-  featureWatcher.onDidCreate(() => controller.discoverTestsFromPickles());
-  featureWatcher.onDidDelete(() => controller.discoverTestsFromPickles());
+  // Add FileSystemWatcher for .feature and step files using configured globs
+  const { featureGlobs, stepGlobs } = getExtensionConfig();
+  for (const glob of featureGlobs) {
+    const watcher = vscode.workspace.createFileSystemWatcher(glob);
+    watcher.onDidCreate(() => controller.discoverTestsFromPickles());
+    watcher.onDidDelete(() => controller.discoverTestsFromPickles());
+    context.subscriptions.push(watcher);
+  }
+  for (const glob of stepGlobs) {
+    const watcher = vscode.workspace.createFileSystemWatcher(glob);
+    watcher.onDidCreate(() => controller.discoverTestsFromPickles());
+    watcher.onDidDelete(() => controller.discoverTestsFromPickles());
+    context.subscriptions.push(watcher);
+  }
 
   controller.initializeWorkspace();
   await controller.discoverTestsFromPickles();
